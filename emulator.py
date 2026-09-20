@@ -1,11 +1,3 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-"""
-Эмулятор UNIX-оболочки, вариант 26.
-GUI-окно в стиле терминала. Работает на Windows, macOS и Linux.
-
-Запуск:  python emulator.py [--vfs vfs.csv] [--script startup.sh]
-"""
 
 import argparse, csv, os, platform, posixpath, shlex, traceback
 import tkinter as tk
