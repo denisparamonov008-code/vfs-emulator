@@ -176,12 +176,12 @@ class Terminal:
         self.root, self.vfs, self.st = root, vfs, st
 
         root.title(f"Эмулятор - {vfs.name}")
-        root.geometry("900x550")            # явный размер — иначе на macOS окно «нулевое»
+        root.geometry("900x550")           
         root.minsize(600, 350)
         if platform.system() != "Darwin":
             root.configure(bg="#0c0c0c")
 
-        # моноширинный шрифт под платформу
+        
         if platform.system() == "Windows":
             family = "Consolas"
         elif platform.system() == "Darwin":
@@ -208,7 +208,7 @@ class Terminal:
         self.text.bind("<Return>", self.on_enter)
         self.text.bind("<Button-1>", lambda e: self.text.focus_set())
 
-        # фокус — важно для macOS, особенно с Tk 8.5
+        
         self.text.focus_set()
         root.after(50, self.text.focus_force)
 
@@ -264,7 +264,7 @@ class Terminal:
         return "break"
 
 
-# ---------- main ----------
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--vfs", help="путь к CSV-файлу VFS")
