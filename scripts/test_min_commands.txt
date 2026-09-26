@@ -1,0 +1,7 @@
+# Минимальная VFS.
+help
+ls /
+conf-dump
+cd /missing
+unknown
+exit

@@ -1,0 +1,10 @@
+type,path,content,encoding
+dir,/, ,plain
+dir,/home,,plain
+dir,/home/student,,plain
+dir,/home/student/projects,,plain
+dir,/home/student/projects/vfs,,plain
+dir,/home/student/projects/vfs/src,,plain
+dir,/home/student/projects/vfs/src/demo,,plain
+file,/motd,Глубокая VFS: 5 уровней каталогов,plain
+file,/home/student/projects/vfs/src/demo/test.txt,Файл на глубоком уровне,plain

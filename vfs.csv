@@ -1,0 +1,9 @@
+type,path,content,encoding
+dir,/, ,plain
+dir,/home,,plain
+dir,/home/user,,plain
+dir,/home/user/docs,,plain
+file,/motd,Добро пожаловать в VFS emulator!,plain
+file,/home/user/notes.txt,первая строка\nвторая строка,plain
+file,/home/user/docs/readme.txt,Это файл внутри вложенного каталога.,plain
+file,/home/user/data.txt,SGVsbG8gVlFTIQ==,base64

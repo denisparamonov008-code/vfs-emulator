@@ -1,0 +1,8 @@
+type,path,content,encoding
+dir,/, ,plain
+dir,/home,,plain
+dir,/home/user,,plain
+file,/motd,VFS с несколькими файлами,plain
+file,/home/user/one.txt,Первый файл,plain
+file,/home/user/two.txt,Второй файл,plain
+file,/home/user/data.txt,SGVsbG8gZnJvbSBiYXNlNjQh,base64

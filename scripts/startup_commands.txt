@@ -1,0 +1,15 @@
+# Проверка команд этапов 1-3.
+help
+ls /
+ls /home
+cd /home
+ls
+cd user
+ls
+cd docs
+ls
+cd ..
+conf-dump
+ls /missing
+unknown
+exit
