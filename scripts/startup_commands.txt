@@ -1,0 +1,8 @@
+# Проверка команд этапов 1-2.
+help
+conf-dump
+ls /
+cd /home
+ls arg1 arg2
+badcommand
+exit

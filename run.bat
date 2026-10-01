@@ -1,2 +1,2 @@
 @echo off
-py src\emulator.py
+py src\emulator.py --vfs vfs.csv --script scripts\startup_commands.txt
