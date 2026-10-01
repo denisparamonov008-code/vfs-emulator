@@ -7,3 +7,11 @@ file,/motd,Добро пожаловать в VFS emulator!,plain
 file,/home/user/notes.txt,первая строка\nвторая строка,plain
 file,/home/user/docs/readme.txt,Это файл внутри вложенного каталога.,plain
 file,/home/user/data.txt,SGVsbG8gVlFTIQ==,base64
+file,/home/user/log.txt,"первая строка
+вторая строка
+третья строка
+четвертая строка
+пятая строка
+шестая строка
+седьмая строка
+восьмая строка",plain

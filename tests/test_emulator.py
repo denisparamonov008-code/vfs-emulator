@@ -2,7 +2,7 @@ import os
 import tempfile
 import unittest
 
-from src.emulator import Config, State, VFS, execute
+from src.emulator import Config, State, VFS, VfsEntry, execute
 
 
 def make_csv():
@@ -70,6 +70,59 @@ class VfsTest(unittest.TestCase):
         os.environ["VFS_TEST_DIR"] = "/home"
         execute("cd $VFS_TEST_DIR", self.state, self.config, self.vfs)
         self.assertEqual(self.state.cwd, "/home")
+
+    def test_history_lists_commands(self):
+        self.state.history.extend(["ls /", "cd /home"])
+        result = execute(
+            "history", self.state, self.config, self.vfs
+        )
+        self.assertEqual(result, "1  ls /\n2  cd /home")
+
+    def test_history_rejects_arguments(self):
+        with self.assertRaises(Exception):
+            execute("history x", self.state, self.config, self.vfs)
+
+    def test_tail_defaults_to_last_lines(self):
+        self.vfs.entries["/log.txt"] = VfsEntry(
+            "/log.txt", "file", "a\nb\nc"
+        )
+        result = execute(
+            "tail /log.txt", self.state, self.config, self.vfs
+        )
+        self.assertEqual(result, "a\nb\nc")
+
+    def test_tail_with_count(self):
+        self.vfs.entries["/log.txt"] = VfsEntry(
+            "/log.txt", "file", "a\nb\nc\nd"
+        )
+        result = execute(
+            "tail -n 2 /log.txt", self.state, self.config, self.vfs
+        )
+        self.assertEqual(result, "c\nd")
+
+    def test_tail_missing_file(self):
+        with self.assertRaises(Exception):
+            execute("tail /missing", self.state, self.config, self.vfs)
+
+    def test_tail_directory(self):
+        with self.assertRaises(Exception):
+            execute("tail /home", self.state, self.config, self.vfs)
+
+    def test_tail_bad_count(self):
+        self.vfs.entries["/log.txt"] = VfsEntry(
+            "/log.txt", "file", "a\nb"
+        )
+        with self.assertRaises(Exception):
+            execute(
+                "tail -n abc /log.txt",
+                self.state,
+                self.config,
+                self.vfs,
+            )
+
+    def test_tail_no_arguments(self):
+        with self.assertRaises(Exception):
+            execute("tail", self.state, self.config, self.vfs)
 
 
 if __name__ == "__main__":

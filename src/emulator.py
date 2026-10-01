@@ -1,4 +1,4 @@
-"""Эмулятор UNIX-оболочки, этапы 1-3."""
+"""Эмулятор UNIX-оболочки, этапы 1-4."""
 
 import argparse
 import base64
@@ -187,6 +187,8 @@ def cmd_help(args, state, config, vfs) -> str:
         "cd - сменить каталог",
         "help - справка",
         "conf-dump - параметры",
+        "history - история команд",
+        "tail - конец файла",
         "exit - выход",
     ]
     return "\n".join(lines)
@@ -203,11 +205,45 @@ def cmd_conf_dump(args, state, config, vfs) -> str:
     return "\n".join(lines)
 
 
+def cmd_history(args, state, config, vfs) -> str:
+    """Показывает историю команд сессии."""
+    if args:
+        raise CommandError("использование: history")
+    lines = []
+    for num, line in enumerate(state.history, 1):
+        lines.append(f"{num}  {line}")
+    return "\n".join(lines)
+
+
+def cmd_tail(args, state, config, vfs) -> str:
+    """Выводит конец файла VFS."""
+    count = 10
+    rest = list(args)
+    if len(rest) >= 2 and rest[0] == "-n":
+        try:
+            count = int(rest[1])
+        except ValueError:
+            raise CommandError("tail: нужно число строк")
+        if count < 0:
+            raise CommandError("tail: нужно число строк")
+        rest = rest[2:]
+    if len(rest) != 1:
+        raise CommandError("использование: tail [-n N] файл")
+    path = vfs.resolve(rest[0], state.cwd)
+    entry = vfs.entries.get(path)
+    if entry is None or entry.kind != "file":
+        raise CommandError(f"нет такого файла: {path}")
+    rows = entry.content.splitlines()
+    return "\n".join(rows[max(0, len(rows) - count):])
+
+
 COMMANDS: Dict[str, Command] = {
     "ls": cmd_ls,
     "cd": cmd_cd,
     "help": cmd_help,
     "conf-dump": cmd_conf_dump,
+    "history": cmd_history,
+    "tail": cmd_tail,
 }
 
 
@@ -247,6 +283,7 @@ def run_script(path, state, config, vfs) -> bool:
                 line = raw.strip()
                 if not line or line.startswith("#"):
                     continue
+                state.history.append(line)
                 print(f"{prompt(state)}{line}")
                 try:
                     output = execute(line, state, config, vfs)
