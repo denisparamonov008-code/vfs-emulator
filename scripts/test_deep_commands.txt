@@ -1,0 +1,8 @@
+# Глубокая VFS.
+help
+ls /
+cd /home/student/projects/vfs/src/demo
+ls
+cd ..
+conf-dump
+exit

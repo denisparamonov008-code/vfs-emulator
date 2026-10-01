@@ -1,0 +1,8 @@
+# VFS с несколькими файлами.
+help
+ls /
+cd /home/user
+ls
+cd ..
+conf-dump
+exit

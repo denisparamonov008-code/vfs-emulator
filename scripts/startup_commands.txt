@@ -1,8 +1,15 @@
-# Проверка команд этапов 1-2.
+# Проверка команд этапов 1-3.
 help
-conf-dump
 ls /
+ls /home
 cd /home
-ls arg1 arg2
-badcommand
+ls
+cd user
+ls
+cd docs
+ls
+cd ..
+conf-dump
+ls /missing
+unknown
 exit
