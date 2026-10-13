@@ -251,8 +251,8 @@ RM_FILES_ARG = 1
 RM_DIR_PREFIX = "/"
 
 
-def cmd_rm(args, state, config, vfs) -> str:
-    """Удаляет файл или каталог из памяти VFS."""
+def parse_rm_args(args):
+    """Разбирает аргументы rm: (ключ -r, путь)."""
     recursive = False
     rest = list(args)
     if rest and rest[0] == RM_RECURSIVE_FLAG:
@@ -260,22 +260,43 @@ def cmd_rm(args, state, config, vfs) -> str:
         rest = rest[1:]
     if len(rest) != RM_FILES_ARG:
         raise CommandError("использование: rm [-r] путь")
-    path = vfs.resolve(rest[0], state.cwd)
-    entry = vfs.entries.get(path)
-    if entry is None:
-        raise CommandError(f"нет такого файла: {path}")
-    if path == RM_DIR_PREFIX:
-        raise CommandError("нельзя удалить корень")
+    return recursive, rest[0]
+
+
+def child_paths(vfs, path):
+    """Возвращает пути вложенных элементов каталога."""
+    prefix = path + "/"
+    return [p for p in vfs.entries if p.startswith(prefix)]
+
+
+def remove_entry(vfs, path, recursive) -> None:
+    """Удаляет элемент VFS и, при ключе -r, его содержимое."""
+    entry = vfs.entries[path]
     if entry.kind == "dir":
-        children = [p for p in vfs.entries
-                    if p.startswith(path + "/")]
+        children = child_paths(vfs, path)
         if children and not recursive:
             raise CommandError(f"каталог не пуст: {path}")
         for item_path in children:
             del vfs.entries[item_path]
     del vfs.entries[path]
+
+
+def reset_cwd(state, path) -> None:
+    """Уводит cwd в корень, если удален текущий каталог."""
     if state.cwd == path or state.cwd.startswith(path + "/"):
         state.cwd = RM_DIR_PREFIX
+
+
+def cmd_rm(args, state, config, vfs) -> str:
+    """Удаляет файл или каталог из памяти VFS."""
+    recursive, target = parse_rm_args(args)
+    path = vfs.resolve(target, state.cwd)
+    if path not in vfs.entries:
+        raise CommandError(f"нет такого файла: {path}")
+    if path == RM_DIR_PREFIX:
+        raise CommandError("нельзя удалить корень")
+    remove_entry(vfs, path, recursive)
+    reset_cwd(state, path)
     return ""
 
 
@@ -363,29 +384,35 @@ def parse_args() -> Config:
     return Config(vfs_path=args.vfs, script_path=script)
 
 
-def main() -> None:
-    """Запускает эмулятор."""
-    config = parse_args()
-    try:
-        vfs = VFS.from_csv(config.vfs_path)
-    except RuntimeError as exc:
-        print(f"error: {exc}")
-        return
-    state = State()
-    print(f"vfs_path={config.vfs_path}")
-    print(f"script_path={config.script_path}")
-    print_motd(vfs)
+def script_arg(config: Config) -> str:
+    """Возвращает путь стартового скрипта или пустую строку."""
     if config.script_path == "<none>":
-        script = ""
-    else:
-        script = config.script_path
+        return ""
+    return config.script_path
+
+
+def load_vfs(config: Config) -> VFS:
+    """Загружает VFS, печатает ошибку и возвращает None."""
     try:
-        stopped = run_script(script, state, config, vfs)
+        return VFS.from_csv(config.vfs_path)
     except RuntimeError as exc:
         print(f"error: {exc}")
-        return
-    if stopped:
-        return
+        return None
+
+
+def run_start_script(config, state, vfs) -> bool:
+    """Выполняет стартовый скрипт, True - работу завершить."""
+    try:
+        stopped = run_script(script_arg(config), state, config, vfs)
+    except RuntimeError as exc:
+        print(f"error: {exc}")
+        return True
+    return stopped
+
+
+def interactive_loop(state: State, config: Config,
+                     vfs: VFS) -> None:
+    """Читает и выполняет команды пользователя."""
     while True:
         try:
             line = input(prompt(state))
@@ -399,6 +426,21 @@ def main() -> None:
             break
         except CommandError as exc:
             print(f"error: {exc}")
+
+
+def main() -> None:
+    """Запускает эмулятор."""
+    config = parse_args()
+    vfs = load_vfs(config)
+    if vfs is None:
+        return
+    state = State()
+    print(f"vfs_path={config.vfs_path}")
+    print(f"script_path={config.script_path}")
+    print_motd(vfs)
+    if run_start_script(config, state, vfs):
+        return
+    interactive_loop(state, config, vfs)
 
 
 if __name__ == "__main__":
