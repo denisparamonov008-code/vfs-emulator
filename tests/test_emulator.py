@@ -9,7 +9,6 @@ from src.emulator import (
     Config,
     State,
     VFS,
-    VfsEntry,
     execute,
 )
 
