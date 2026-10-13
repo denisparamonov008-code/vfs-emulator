@@ -36,6 +36,41 @@ def cmd_conf_dump(args, config):
     print(f"script_path={config.script_path}")
 
 
+def cmd_exit(args):
+    """Завершает работу оболочки."""
+    if args:
+        print("error: использование: exit")
+        return
+    raise SystemExit
+
+
+def cmd_help(args):
+    """Показывает справку."""
+    if args:
+        print("error: использование: help")
+        return
+    show_help()
+
+
+def cmd_stub(command, args):
+    """Заглушка: печатает имя команды и аргументы."""
+    print(command, *args)
+
+
+def cmd_dispatch(command, args, config):
+    """Вызывает обработчик команды."""
+    if command == "exit":
+        cmd_exit(args)
+    elif command == "help":
+        cmd_help(args)
+    elif command == "conf-dump":
+        cmd_conf_dump(args, config)
+    elif command in ("ls", "cd"):
+        cmd_stub(command, args)
+    else:
+        print(f"error: неизвестная команда: {command}")
+
+
 def execute(line, config):
     """Разбирает и выполняет одну команду."""
     try:
@@ -43,39 +78,11 @@ def execute(line, config):
     except ValueError:
         print("error: ошибка разбора команды")
         return
-
     if not parts:
         return
-
     command = parts[0]
     args = [os.path.expandvars(arg) for arg in parts[1:]]
-
-    if command == "exit":
-        if args:
-            print("error: использование: exit")
-            return
-        raise SystemExit
-
-    if command == "help":
-        if args:
-            print("error: использование: help")
-            return
-        show_help()
-        return
-
-    if command == "conf-dump":
-        cmd_conf_dump(args, config)
-        return
-
-    if command == "ls":
-        print("ls", *args)
-        return
-
-    if command == "cd":
-        print("cd", *args)
-        return
-
-    print(f"error: неизвестная команда: {command}")
+    cmd_dispatch(command, args, config)
 
 
 def prompt():
@@ -98,7 +105,7 @@ def run_script(path, config):
                     execute(line, config)
                 except SystemExit:
                     return True
-                except Exception as exc:  # noqa: BLE001
+                except Exception as exc:
                     print(f"error: строка {number}: {exc}")
                     continue
     except OSError as exc:
@@ -126,7 +133,9 @@ def main():
     config = parse_args()
     print(f"vfs_path={config.vfs_path}")
     print(f"script_path={config.script_path}")
-    script = "" if config.script_path == "<none>" else config.script_path
+    script = ""
+    if config.script_path != "<none>":
+        script = config.script_path
     stopped = run_script(script, config)
     if stopped:
         return

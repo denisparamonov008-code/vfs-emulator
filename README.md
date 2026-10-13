@@ -33,6 +33,12 @@ python3 src/emulator.py --vfs vfs.csv --script scripts/startup_commands.txt
 и строки, начинающиеся с `#`. При выполнении на экране видны и ввод,
 и вывод, имитируя диалог с пользователем.
 
+## Тесты
+
+```text
+python3 -m unittest discover -s tests -t . -v
+```
+
 ## Скрипты запуска
 
 - `run.sh` - Linux/macOS;
