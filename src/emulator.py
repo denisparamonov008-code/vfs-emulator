@@ -151,10 +151,12 @@ class Config:
 
 Command = Callable[[List[str], State, Config, VFS], str]
 
+MAX_PATH_ARGS = 1
+
 
 def cmd_ls(args, state, config, vfs) -> str:
     """Содержимое виртуального каталога."""
-    if len(args) > 1:
+    if len(args) > MAX_PATH_ARGS:
         raise CommandError("использование: ls [путь]")
     if args:
         path = vfs.resolve(args[0], state.cwd)
@@ -165,7 +167,7 @@ def cmd_ls(args, state, config, vfs) -> str:
 
 def cmd_cd(args, state, config, vfs) -> str:
     """Изменяет виртуальный текущий каталог."""
-    if len(args) > 1:
+    if len(args) > MAX_PATH_ARGS:
         raise CommandError("использование: cd [каталог]")
     if args:
         path = vfs.resolve(args[0], state.cwd)
