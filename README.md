@@ -21,6 +21,12 @@ python3 src/emulator.py
 
 Ошибки: неизвестная команда, неверные аргументы, ошибка разбора.
 
+## Тесты
+
+```text
+python3 -m unittest discover -s tests -t . -v
+```
+
 ## Скрипты запуска
 
 - `run.sh` - Linux/macOS;
