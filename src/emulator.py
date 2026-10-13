@@ -151,10 +151,12 @@ class Config:
 
 Command = Callable[[List[str], State, Config, VFS], str]
 
+MAX_PATH_ARGS = 1
+
 
 def cmd_ls(args, state, config, vfs) -> str:
     """Содержимое виртуального каталога."""
-    if len(args) > 1:
+    if len(args) > MAX_PATH_ARGS:
         raise CommandError("использование: ls [путь]")
     if args:
         path = vfs.resolve(args[0], state.cwd)
@@ -165,7 +167,7 @@ def cmd_ls(args, state, config, vfs) -> str:
 
 def cmd_cd(args, state, config, vfs) -> str:
     """Изменяет виртуальный текущий каталог."""
-    if len(args) > 1:
+    if len(args) > MAX_PATH_ARGS:
         raise CommandError("использование: cd [каталог]")
     if args:
         path = vfs.resolve(args[0], state.cwd)
@@ -189,6 +191,7 @@ def cmd_help(args, state, config, vfs) -> str:
         "conf-dump - параметры",
         "history - история команд",
         "tail - конец файла",
+        "rm - удалить файл или каталог",
         "exit - выход",
     ]
     return "\n".join(lines)
@@ -215,19 +218,25 @@ def cmd_history(args, state, config, vfs) -> str:
     return "\n".join(lines)
 
 
+TAIL_DEFAULT_COUNT = 10
+TAIL_FLAG_PARTS = 2
+TAIL_SINGLE_PATH = 1
+TAIL_MIN_COUNT = 0
+
+
 def cmd_tail(args, state, config, vfs) -> str:
     """Выводит конец файла VFS."""
-    count = 10
+    count = TAIL_DEFAULT_COUNT
     rest = list(args)
-    if len(rest) >= 2 and rest[0] == "-n":
+    if len(rest) >= TAIL_FLAG_PARTS and rest[0] == "-n":
         try:
             count = int(rest[1])
         except ValueError:
             raise CommandError("tail: нужно число строк")
-        if count < 0:
+        if count < TAIL_MIN_COUNT:
             raise CommandError("tail: нужно число строк")
-        rest = rest[2:]
-    if len(rest) != 1:
+        rest = rest[TAIL_FLAG_PARTS:]
+    if len(rest) != TAIL_SINGLE_PATH:
         raise CommandError("использование: tail [-n N] файл")
     path = vfs.resolve(rest[0], state.cwd)
     entry = vfs.entries.get(path)
@@ -237,6 +246,39 @@ def cmd_tail(args, state, config, vfs) -> str:
     return "\n".join(rows[max(0, len(rows) - count):])
 
 
+RM_RECURSIVE_FLAG = "-r"
+RM_FILES_ARG = 1
+RM_DIR_PREFIX = "/"
+
+
+def cmd_rm(args, state, config, vfs) -> str:
+    """Удаляет файл или каталог из памяти VFS."""
+    recursive = False
+    rest = list(args)
+    if rest and rest[0] == RM_RECURSIVE_FLAG:
+        recursive = True
+        rest = rest[1:]
+    if len(rest) != RM_FILES_ARG:
+        raise CommandError("использование: rm [-r] путь")
+    path = vfs.resolve(rest[0], state.cwd)
+    entry = vfs.entries.get(path)
+    if entry is None:
+        raise CommandError(f"нет такого файла: {path}")
+    if path == RM_DIR_PREFIX:
+        raise CommandError("нельзя удалить корень")
+    if entry.kind == "dir":
+        children = [p for p in vfs.entries
+                    if p.startswith(path + "/")]
+        if children and not recursive:
+            raise CommandError(f"каталог не пуст: {path}")
+        for item_path in children:
+            del vfs.entries[item_path]
+    del vfs.entries[path]
+    if state.cwd == path or state.cwd.startswith(path + "/"):
+        state.cwd = RM_DIR_PREFIX
+    return ""
+
+
 COMMANDS: Dict[str, Command] = {
     "ls": cmd_ls,
     "cd": cmd_cd,
@@ -244,6 +286,7 @@ COMMANDS: Dict[str, Command] = {
     "conf-dump": cmd_conf_dump,
     "history": cmd_history,
     "tail": cmd_tail,
+    "rm": cmd_rm,
 }
 
 

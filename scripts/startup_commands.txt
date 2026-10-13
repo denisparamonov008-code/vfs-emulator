@@ -1,4 +1,4 @@
-# Проверка команд этапов 1-4.
+# Проверка команд этапов 1-5.
 help
 ls /
 ls /home
@@ -14,6 +14,17 @@ tail /home/user/notes.txt
 tail -n abc /home/user/log.txt
 tail /missing
 tail /home
+rm notes.txt
+ls
+rm /home/user/docs/readme.txt
+ls /home/user/docs
+rm /home/user/docs
+rm -r /home/user/docs
+ls /home/user
+rm /missing
+rm
+rm -r /home
+rm /
 cd ..
 conf-dump
 ls /missing
