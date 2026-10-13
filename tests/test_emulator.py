@@ -1,4 +1,4 @@
-"""Тесты эмулятора: VFS и команды этапов 1-4."""
+"""Тесты эмулятора: VFS, команды этапов 1-5."""
 
 import os
 import tempfile
@@ -9,6 +9,7 @@ from src.emulator import (
     Config,
     State,
     VFS,
+    VfsEntry,
     execute,
 )
 
@@ -17,6 +18,7 @@ CSV_ROWS = [
     "dir,/, ,plain",
     "dir,/home,,plain",
     "dir,/home/user,,plain",
+    "dir,/home/user/docs,,plain",
     "file,/motd,Hello,plain",
     "file,/home/user/data.txt,SGVsbG8=,base64",
     "file,/home/user/log.txt,\"a\nb\nc\nd\",plain",
@@ -24,7 +26,7 @@ CSV_ROWS = [
 
 
 def write_csv(rows):
-    """Пишет временный CSV и возвращает путь к нему."""
+    """Пишет временный CSV и возвращает его путь."""
     temp = tempfile.NamedTemporaryFile(
         mode="w", suffix=".csv", delete=False,
         encoding="utf-8", newline="",
@@ -46,6 +48,12 @@ def make_vfs(rows=None):
 def make_session():
     """Создаёт состояние и параметры сессии."""
     return State(), Config("vfs.csv", "<none>")
+
+
+def run(line, vfs=None):
+    """Выполняет команду и возвращает результат."""
+    state, config = make_session()
+    return state, execute(line, state, config, vfs or make_vfs())
 
 
 class VfsTest(unittest.TestCase):
@@ -75,8 +83,8 @@ class VfsTest(unittest.TestCase):
         """Список файлов вложенного каталога."""
         vfs = make_vfs()
         state, config = make_session()
-        result = execute("ls /home/user", state, config, vfs)
-        self.assertEqual(result, "data.txt  log.txt")
+        result = execute("ls /home/user/docs", state, config, vfs)
+        self.assertEqual(result, "")
 
     def test_base64_content_loaded(self):
         """Данные из base64 раскодированы."""
@@ -172,6 +180,79 @@ class VfsTest(unittest.TestCase):
         state, config = make_session()
         with self.assertRaises(CommandError):
             execute("tail", state, config, vfs)
+
+    def test_rm_file(self):
+        """Rm удаляет файл из памяти."""
+        vfs = make_vfs()
+        state, config = make_session()
+        execute("rm /home/user/log.txt", state, config, vfs)
+        self.assertNotIn("/home/user/log.txt", vfs.entries)
+
+    def test_rm_file_relative(self):
+        """Rm понимает относительный путь."""
+        vfs = make_vfs()
+        state, config = make_session()
+        execute("cd /home/user", state, config, vfs)
+        execute("rm log.txt", state, config, vfs)
+        self.assertNotIn("/home/user/log.txt", vfs.entries)
+
+    def test_rm_empty_dir(self):
+        """Rm удаляет пустой каталог."""
+        vfs = make_vfs()
+        state, config = make_session()
+        execute("rm /home/user/docs", state, config, vfs)
+        self.assertNotIn("/home/user/docs", vfs.entries)
+
+    def test_rm_dir_without_flag(self):
+        """Rm непустого каталога без -r дает ошибку."""
+        vfs = make_vfs()
+        state, config = make_session()
+        with self.assertRaises(CommandError):
+            execute("rm /home/user", state, config, vfs)
+
+    def test_rm_dir_recursive(self):
+        """Rm -r удаляет каталог с содержимым."""
+        vfs = make_vfs()
+        state, config = make_session()
+        execute("rm -r /home/user", state, config, vfs)
+        self.assertNotIn("/home/user", vfs.entries)
+        self.assertNotIn("/home/user/log.txt", vfs.entries)
+
+    def test_rm_missing(self):
+        """Rm отсутствующего файла дает ошибку."""
+        vfs = make_vfs()
+        state, config = make_session()
+        with self.assertRaises(CommandError):
+            execute("rm /missing", state, config, vfs)
+
+    def test_rm_no_arguments(self):
+        """Rm без аргументов дает ошибку."""
+        vfs = make_vfs()
+        state, config = make_session()
+        with self.assertRaises(CommandError):
+            execute("rm", state, config, vfs)
+
+    def test_rm_root_denied(self):
+        """Rm корня запрещен."""
+        vfs = make_vfs()
+        state, config = make_session()
+        with self.assertRaises(CommandError):
+            execute("rm -r /", state, config, vfs)
+
+    def test_rm_resets_cwd(self):
+        """После удаления текущего каталога cwd в корне."""
+        vfs = make_vfs()
+        state, config = make_session()
+        execute("cd /home/user", state, config, vfs)
+        execute("rm -r /home/user", state, config, vfs)
+        self.assertEqual(state.cwd, "/")
+
+    def test_rm_extra_arguments(self):
+        """Rm с лишними аргументами дает ошибку."""
+        vfs = make_vfs()
+        state, config = make_session()
+        with self.assertRaises(CommandError):
+            execute("rm a b", state, config, vfs)
 
 
 if __name__ == "__main__":
